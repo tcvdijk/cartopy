@@ -1,4 +1,4 @@
-# Cartopy
+# Linca
 
 Spatially-informative linear cartograms using least squares adjustment.
 
@@ -23,7 +23,7 @@ One line per node, three tokens per line, separated by whitespace.
 
 ### Output: Ipe
 
-Draws the network in an Ipe file. Select using ```--ipe'''.
+Draws the network in an Ipe file. Select using ```--ipe```.
 
 ## Example
 
