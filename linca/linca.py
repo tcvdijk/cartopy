@@ -1,16 +1,18 @@
-"""Usage: linca.py [--ipe] [--scale=<s>]
+"""Usage: linca.py [--ipe] [--scale=<s>] [--straightness=<s>]
           linca.py --help
 
 Draws a linear cartogram.
 
 Options:
-  --ipe            Write IPE file.
-  -s --scale=<s>   Scale all coordinates by a constant factor. [Default: 1]
-  --help           Display this message. 
+  --ipe               Write IPE file.
+  -s --scale=<s>      Scale all coordinates by a constant factor. [Default: 1]
+  --straightness=<s>  Focus on direction rather than length. [Default: 1000]
+  --help              Display this message. 
 """
 from docopt import docopt
 if __name__ == '__main__': arguments = docopt(__doc__)
 
+from math import sqrt
 import numpy as np
 from scipy.sparse import csr_matrix as sparse_matrix
 from scipy.sparse.linalg import spsolve as sparse_solve
@@ -43,32 +45,43 @@ for e in edges:
 n = fresh
 edges = [ (new_name[e[0]], new_name[e[1]], e[2], e[3]) for e in edges ]
 
-# set up matrix
+## Solve
+
+# Construct the least-squares formulation in a sparse matrix `A` and right-hand side `b`.
+# In order to determine the system (as long as the graph is connected), we also fix the coordinate of vertex "0" to (0,0).
+
+straightness = float(arguments['--straightness'])
+
+# set up matrix through lists of rows, columns, and values
 num_cols = 2*n
 num_rows = 2*len(edges) + 2
 def x_var(i): return 2*i
 def y_var(i): return 2*i + 1
-rows = [ i for i in range(2*len(edges)) for _ in range(2)] + [num_rows-2,num_rows-1]
+rows = [ i for i in range(2*len(edges)) for _ in range(4)] + [num_rows-2,num_rows-1]
 cols = [ f(e) for e in edges for f in (lambda e: x_var(e[0]),
                                        lambda e: x_var(e[1]),
                                        lambda e: y_var(e[0]),
+                                       lambda e: y_var(e[1]),
+                                       lambda e: x_var(e[0]),
+                                       lambda e: x_var(e[1]),
+                                       lambda e: y_var(e[0]),
                                        lambda e: y_var(e[1]))] + [0,1]
-vals = [ j for _ in range(2*len(edges)) for j in [-1,1]] + [1,1]
-
+vals = [ val for e in edges for val in (-e[2], e[2], -e[3], e[3],
+                                         straightness*e[3],-straightness*e[3], -straightness*e[2], straightness*e[2])] + [1,1]
 A = sparse_matrix((vals,(rows,cols)),shape=(num_rows,num_cols))
-b = [ f(e) for e in edges for f in (lambda e: e[2], lambda e: e[3]) ] + [0,0]
 
-# solve least squares
+b = [ val for e in edges for val in (sqrt(e[2]**2+e[3]**2),0) ] + [0,0]
+
+# Solve least squares problem by solving Gauß normal form: `A^T A positions = A^T b`
 AtA = A.transpose()*A
 Atb = A.transpose()*b
-
 positions = sparse_solve(AtA,Atb)
 
 # read the solution and apply scale
 scale = float(arguments['--scale'])
 pos = [ (scale*positions[x_var(i)],scale*positions[y_var(i)]) for i in range(n) ]
 
-# plot output
+## Output
 if( arguments['--ipe']):
   from miniipe import Document, polyline
   doc = Document()
@@ -84,6 +97,6 @@ if( arguments['--ipe']):
 
   print(doc.tostring())
 
-else:
+else: # not ipe
   for i, p in enumerate(pos):
     print( old_name[i], p[0], p[1] )
