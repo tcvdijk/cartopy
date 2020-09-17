@@ -70,17 +70,17 @@ pos = [ (scale*positions[x_var(i)],scale*positions[y_var(i)]) for i in range(n) 
 
 # plot output
 if( arguments['--ipe']):
-  from miniipe import Document
+  from miniipe import Document, polyline
   doc = Document()
   doc.import_stylefile()
   doc.add_layer('edges')
   doc.add_layer('nodes')
   doc.add_layer('labels')
   for e in edges:
-    doc.add_path( [ pos[e[0]], pos[e[1]] ], layer='edges' )
+    doc.path( polyline([ pos[e[0]], pos[e[1]] ]), layer='edges' )
   for i, p in enumerate(pos):
-    doc.add_symbol( p, layer='nodes' )
-    doc.add_text( p, str(old_name[i]), layer='labels')
+    doc.symbol( p, layer='nodes' )
+    doc.text( p, str(old_name[i]), layer='labels')
 
   print(doc.tostring())
 
