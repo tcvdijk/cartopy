@@ -6,7 +6,7 @@ Draws a linear cartogram.
 Options:
   --ipe               Write IPE file.
   -s --scale=<s>      Scale all coordinates by a constant factor. [Default: 1]
-  --straightness=<s>  Focus on direction rather than length. [Default: 1000]
+  --straightness=<s>  Focus on direction rather than length. [Default: 10]
   --help              Display this message. 
 """
 from docopt import docopt
@@ -92,8 +92,8 @@ if( arguments['--ipe']):
   for e in edges:
     doc.path( polyline([ pos[e[0]], pos[e[1]] ]), layer='edges' )
   for i, p in enumerate(pos):
-    doc.symbol( p, layer='nodes' )
-    doc.text( p, str(old_name[i]), layer='labels')
+    doc.use( pos=p, layer='nodes' )
+    doc.text( str(old_name[i]), pos=p, layer='labels')
 
   print(doc.tostring())
 
